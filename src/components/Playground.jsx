@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ReactFlow,
   applyNodeChanges,
@@ -13,17 +13,10 @@ import "@xyflow/react/dist/style.css";
 import { useDrop } from "react-dnd";
 import { ItemTypes } from "./NodesPanel";
 
-const initialNodes = [
-  { id: "n1", position: { x: 0, y: 0 }, data: { label: "Node 1" } },
-  { id: "n2", position: { x: 0, y: 100 }, data: { label: "Node 2" } },
-];
-const initialEdges = [{ id: "n1-n2", source: "n1", target: "n2" }];
-
 let nodeId = 3;
 
-export default function Playground() {
-  const [nodes, setNodes] = useState(initialNodes);
-  const [edges, setEdges] = useState(initialEdges);
+export default function Playground({ setIsSetting, selectedNode, setSelectedNode, nodes, edges, setNodes, setEdges }) {
+
 
   const reactFlowWrapper = useRef(null);
   const { screenToFlowPosition } = useReactFlow();
@@ -43,6 +36,27 @@ export default function Playground() {
     []
   );
 
+  const onNodeClick = (event, node) => {
+    setSelectedNode(node);
+    setIsSetting(true);
+  };
+
+  const updateNodeLabel = (id, newLabel) => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        node.id === id ? { ...node, data: { ...node.data, label: newLabel } } : node
+      )
+    );
+  };
+
+  useEffect(() => {
+    setNodes((prevNodes) =>
+      prevNodes.map((node) =>
+        node?.id === selectedNode?.id ? selectedNode : node
+      )
+    );
+  }, [selectedNode]);
+
   const [, drop] = useDrop(() => ({
     accept: ItemTypes.BOX,
     drop: (item, monitor) => {
@@ -58,7 +72,7 @@ export default function Playground() {
         id: `n${nodeId++}`,
         type: "default",
         position,
-        data: { label: `Message Node` },
+        data: { label: 'Message Node' },
       };
 
       setNodes((prev) => [...prev, newNode]);
@@ -66,20 +80,22 @@ export default function Playground() {
   }));
 
   return (
-      <div ref={reactFlowWrapper} style={{ width: "100vw", height: "100vh" }}>
-        <div ref={drop} style={{ width: "100%", height: "100%" }}>
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            fitView
-          >
-            <Background />
-            <Controls />
-          </ReactFlow>
-        </div>
+    <div ref={reactFlowWrapper} style={{ width: "100vw", height: "100vh" }}>
+      <div ref={drop} style={{ width: "100%", height: "100%" }}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onNodeClick={onNodeClick}
+          fitView
+        >
+          <Background />
+          <Controls />
+        </ReactFlow>
       </div>
+    </div>
   );
 }
+
